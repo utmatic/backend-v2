@@ -1,4 +1,4 @@
 flask
+flask-cors
 PyMuPDF
 gunicorn
-flask-cors

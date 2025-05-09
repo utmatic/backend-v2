@@ -14,8 +14,15 @@ app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
 def generate_utm_url(base_url, item_number, source, medium, campaign):
     return f"{base_url}{item_number}?utm_source={source}&utm_medium={medium}&utm_campaign={campaign}&utm_content={item_number}"
 
-def find_matches(text, regex):
-    return re.findall(regex, text)
+def get_matches_from_words(words, item_regex):
+    matches = []
+    for i in range(len(words)):
+        for j in range(i+1, min(i+6, len(words))+1):  # check 2-6 word combinations
+            joined_text = ''.join([w[4] for w in words[i:j]])
+            if re.fullmatch(item_regex, joined_text):
+                rect = fitz.Rect(words[i][0], words[i][1], words[j-1][2], words[j-1][3])
+                matches.append((joined_text, rect))
+    return matches
 
 @app.route('/process', methods=['POST'])
 def process_pdf():
@@ -41,21 +48,33 @@ def process_pdf():
     changes = []
 
     for page_num, page in enumerate(doc):
-        text = page.get_text("text")
-        matches = compiled_regex.findall(text)
+        if mode == 'utm-only':
+            links = page.get_links()
+            for link in links:
+                if 'uri' in link:
+                    orig_url = link['uri']
+                    if '?' in orig_url:
+                        new_url = orig_url + f"&utm_source={source}&utm_medium={medium}&utm_campaign={campaign}&utm_content={orig_url}"
+                    else:
+                        new_url = orig_url + f"?utm_source={source}&utm_medium={medium}&utm_campaign={campaign}&utm_content={orig_url}"
+                    page.insert_link({
+                        "from": link["from"],
+                        "uri": new_url,
+                        "kind": fitz.LINK_URI,
+                    })
+                    changes.append(f"Updated link on page {page_num+1}")
+        elif mode == 'hyperlink-utm':
+            words = page.get_text("words")  # list of (x0, y0, x1, y1, word, block_no, line_no, word_no)
+            matches = get_matches_from_words(words, compiled_regex)
 
-        for match in matches:
-            search_instances = page.search_for(match, hit_max=20)
-            if not search_instances:
-                continue
-            for inst in search_instances:
-                url = generate_utm_url(base_url, match, source, medium, campaign)
+            for match_text, rect in matches:
+                url = generate_utm_url(base_url, match_text, source, medium, campaign)
                 page.insert_link({
-                    "from": inst,
+                    "from": rect,
                     "uri": url,
                     "kind": fitz.LINK_URI,
                 })
-                changes.append(f"Added hyperlink to '{match}' on page {page_num + 1}")
+                changes.append(f"Linked {match_text} on page {page_num+1}")
 
     processed_path = pdf_path.replace('.pdf', '-processed.pdf')
     doc.save(processed_path)
