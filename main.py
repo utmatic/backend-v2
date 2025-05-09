@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 import tempfile
@@ -6,6 +7,8 @@ import fitz  # PyMuPDF
 import re
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all domains
+
 app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
 
 def generate_utm_url(base_url, item_number, source, medium, campaign):
