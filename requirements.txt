@@ -4,3 +4,4 @@ pydantic
 PyMuPDF
 requests
 beautifulsoup4
+gunicorn
