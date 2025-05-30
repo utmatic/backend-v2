@@ -37,9 +37,16 @@ def extract_links_from_pdf(pdf_path):
                 links.add(link['uri'])
     return list(links)
 
+# User-Agent header to reduce 403s
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/122.0.0.0 Safari/537.36"
+}
+
 def check_link_status(url):
     try:
-        resp = requests.head(url, allow_redirects=True, timeout=5)
+        resp = requests.head(url, allow_redirects=True, timeout=5, headers=HEADERS)
         return resp.status_code
     except Exception:
         return None
@@ -51,7 +58,7 @@ KEYWORDS = [
 
 def analyze_link_content(url):
     try:
-        resp = requests.get(url, timeout=8)
+        resp = requests.get(url, timeout=8, headers=HEADERS)
         if resp.status_code != 200:
             return []
         soup = BeautifulSoup(resp.text, "html.parser")
