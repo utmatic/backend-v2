@@ -1,8 +1,6 @@
 fastapi
 uvicorn
 pydantic
-PyMuPDF
-requests
-beautifulsoup4
-gunicorn
 python-multipart
+python-docx
+PyMuPDF
