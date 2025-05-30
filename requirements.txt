@@ -1,4 +1,6 @@
-flask
-flask-cors
+fastapi
+uvicorn
+pydantic
 PyMuPDF
-gunicorn
+requests
+beautifulsoup4
